@@ -23,10 +23,11 @@ class LHP:
         p = getPrime(l - 1) + 1
         q = getPrime(l - 1) + 1
         N = p*q
+        N2 = N*N
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
         temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
-        h = pow(g,temp_exp)
+        h = pow(g,temp_exp,N2) # h só vai ser utilizado numa potencia sua mod (N2), fazemos isto para facilitar
         return LHP(T,N,g,h)
     
     def PGen(pp,s):
@@ -60,7 +61,7 @@ class LHP:
             v_prime = (v_prime % N2 * Z[1] % N2) % N2
         return (u_prime,v_prime)
 
-pp = LHP.PSetup(512,12)
+pp = LHP.PSetup(512,16)
 Z1 = LHP.PGen(pp,12)
 Z2 = LHP.PGen(pp,512)
 Z_prime = LHP.PEval(pp,(Z1,Z2))
