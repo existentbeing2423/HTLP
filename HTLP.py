@@ -1,4 +1,5 @@
-from Crypto.Util.number import getPrime, getStrongPrime, isPrime, getRandomRange, GCD
+from Crypto.Util.number import getPrime, getStrongPrime, isPrime, getRandomRange, GCD \
+, inverse
 import gmpy2
 
 
@@ -32,7 +33,7 @@ class LHP:
         N2 = pp.N*pp.N
         r = getRandomRange(1,N2)
         u = pow(pp.g,r,pp.N)
-        v = pow(pp.h,r*pp.N,N2)*pow((1 + pp.N),s,N2)
+        v = pow(pp.h,r*pp.N,N2)*pow((1 + pp.N),s,N2) % N2
         return (u,v)
     
     def PSolve(pp,Z):
@@ -45,15 +46,26 @@ class LHP:
         while i < T:
             w = pow(w,2,N)
             i += 1
+        inv_wN = inverse(pow(w,N,N2),N2) # facilita a próxima operação
+        s = ((v * inv_wN) % N2 - 1) // N
+        return s
 
-        s = ((v // pow(w,N,N2)) % N2 - 1) // N
-        return s                
-    
+    def PEval(pp,Z_list):
+        N = pp.N
+        N2 = N*N
+        u_prime = 1
+        v_prime = 1
+        for Z in Z_list:                
+            u_prime = (u_prime % N * Z[0] % N) % N
+            v_prime = (v_prime % N2 * Z[1] % N2) % N2
+        return (u_prime,v_prime)
 
-pp = LHP.PSetup(512,21)
-Z = LHP.PGen(pp,12)
-s = LHP.PSolve(pp,Z)
-print(s)
+pp = LHP.PSetup(512,12)
+Z1 = LHP.PGen(pp,12)
+Z2 = LHP.PGen(pp,512)
+Z_prime = LHP.PEval(pp,(Z1,Z2))
+s_prime = LHP.PSolve(pp,Z_prime)
+print(s_prime)
 
         
 
