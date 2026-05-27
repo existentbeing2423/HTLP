@@ -1,5 +1,4 @@
-from Crypto.Util.number import getPrime, getStrongPrime, isPrime, getRandomRange, GCD \
-, inverse
+from Crypto.Util.number import getPrime, getRandomRange, GCD , inverse
 import gmpy2
 
 
@@ -25,8 +24,8 @@ class LHP:
         N = p*q
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
-        temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
-        h = pow(g,temp_exp,N) # h^r = (h%N2)^r mod N2, só vai ser utilizado nesta circunstância
+        temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
+        h = pow(g,temp_exp,N) 
         print("done setup \n")
         return LHP(T,N,g,h)
     
@@ -80,7 +79,7 @@ class MHP:
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
         temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
-        h = pow(g,temp_exp,N) # h^r = (h%N2)^r mod N2, só vai ser utilizado nesta circunstância
+        h = pow(g,temp_exp,N) 
         print("done setup \n")
         return LHP(T,N,g,h)
     
@@ -90,13 +89,13 @@ class MHP:
         r = getRandomRange(1,N2)
         u = pow(pp.g,r,pp.N)
         v = pow(pp.h,r,N)*(s % N) % N
+        vh = pow(pp.h,r,N)
         print("done gen\n")
         return (u,v)
     
     def PSolve(pp,Z):
         T = pp.T
         N = pp.N
-        N2 = N*N
         w = Z[0]
         v = Z[1]
         i = 0
