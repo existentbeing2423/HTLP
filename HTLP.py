@@ -1,7 +1,7 @@
 from Crypto.Util.number import getPrime, getRandomRange, GCD , inverse, isPrime, getStrongPrime
 import gmpy2
 import time 
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 
 def sample_Z_star(N):
     while True:
@@ -10,7 +10,7 @@ def sample_Z_star(N):
             return s
 
 
-class LHP:
+class Partial_HP:
 
     def __init__(self,T,N,g,h):
         self.T = T
@@ -27,18 +27,16 @@ class LHP:
         g = (-pow(g_tilde,2,N)) % N
         temp_exp = pow(2,T,(p - 1)*(q - 1)) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
         h = pow(g,temp_exp,N) 
-        print("done setup \n")
-        return LHP(T,N,g,h)
+        return Partial_HP(T,N,g,h)
     
-    def PGen(pp,s):
+    def LPGen(pp,s):
         N2 = pp.N*pp.N
         r = getRandomRange(1,N2)
         u = pow(pp.g,r,pp.N)
         v = pow(pp.h,r*pp.N,N2)*pow((1 + pp.N),s,N2) % N2
-        print("done gen\n")
         return (u,v)
     
-    def PSolve(pp,Z):
+    def LPSolve(pp,Z):
         T = pp.T
         N = pp.N
         N2 = N*N
@@ -52,7 +50,7 @@ class LHP:
         s = ((v * inv_wN) % N2 - 1) // N
         return s
 
-    def PEval(pp,Z_list):
+    def LPEval(pp,Z_list):
         N = pp.N
         N2 = N*N
         u_prime = 1
@@ -60,41 +58,17 @@ class LHP:
         for Z in Z_list:                
             u_prime = (u_prime % N * Z[0] % N) % N
             v_prime = (v_prime % N2 * Z[1] % N2) % N2
-        print("done eval\n")
         return (u_prime,v_prime)
-
-
-class MHP:
-
-    def __init__(self,T,N,g,h):
-        self.T = T
-        self.N = N
-        self.g = g
-        self.h = h
-        self.pp = (T,N,g,h)
-
-    def PSetup (l,T):
-        p = getStrongPrime(l)
-        q = getStrongPrime(l)
-        N = p*q
-        g_tilde = sample_Z_star(N)
-        g = (-pow(g_tilde,2,N)) % N
-        temp_exp = pow(2,T,(p - 1)*(q - 1)) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
-        h = pow(g,temp_exp,N) 
-        print("done setup \n")
-        return LHP(T,N,g,h)
     
-    def PGen(pp,s):
+    def MPGen(pp,s):
         N = pp.N
         N2 = N*N
         r = getRandomRange(1,N2)
         u = pow(pp.g,r,pp.N)
         v = pow(pp.h,r,N)*(s % N) % N
-        vh = pow(pp.h,r,N)
-        print("done gen\n")
         return (u,v)
     
-    def PSolve(pp,Z):
+    def MPSolve(pp,Z):
         T = pp.T
         N = pp.N
         w = Z[0]
@@ -107,45 +81,120 @@ class MHP:
         s = (v * inv_w) % N 
         return s
 
-    def PEval(pp,Z_list):
+    def MPEval(pp,Z_list):
         N = pp.N
-        N2 = N*N
         u_prime = 1
         v_prime = 1
         for Z in Z_list:                
             u_prime = (u_prime % N * Z[0] % N) % N
             v_prime = (v_prime % N * Z[1] % N) % N
-        print("done eval\n")
         return (u_prime,v_prime)
 
 
-tsetup_start = time.time()
-pp = MHP.PSetup(1024,2000041)
-tsetup_end = time.time()
-print(tsetup_end - tsetup_start)
+
+T = 100
+T_axis = []
+tsetup_axis = []
+tgen_axis = []
+teval_axis = []
+tsolve_axis = []
+
+while T < 10000000:
+
+    T_axis.append(T)
+
+    tsetup_start = time.time()
+    pp = Partial_HP.PSetup(1024,T)
+    tsetup_end = time.time()
+    tsetup_axis.append(tsetup_end - tsetup_start)
+
+    tgen_start = time.time()
+    Z1 = Partial_HP.MPGen(pp,12)
+    Z2 = Partial_HP.MPGen(pp,512)
+    tgen_end = time.time()
+    tgen_axis.append(tgen_end - tgen_start)
 
 
-tgen_star = time.time()
-Z1 = MHP.PGen(pp,12)
-Z2 = MHP.PGen(pp,512)
-tgen_end = time.time()
-print(tgen_end - tgen_star)
+    teval_start = time.time()
+    Z_prime = Partial_HP.MPEval(pp,(Z1,Z2))
+    teval_end = time.time()
+    teval_axis.append(teval_end - teval_start)
 
 
-teval_start = time.time()
-Z_prime = MHP.PEval(pp,(Z1,Z2))
-teval_end = time.time()
-print(teval_end - teval_start)
+    tsolve_start = time.time()
+    s_prime = Partial_HP.MPSolve(pp,Z_prime)
+    tsolve_end = time.time()
+    tsolve_axis.append(tsolve_end - tsolve_start)
 
+    if s_prime != 512 * 12:
+        raise Exception("Error: Wrong result")
 
-tsolve_start = time.time()
-s_prime = MHP.PSolve(pp,Z_prime)
-tsolve_end = time.time()
-print(tsolve_end - tsolve_start)
+    T = T * 2
 
-
+plt.figure()
+plt.plot(T_axis,tsetup_axis,label = "Setup time")
+plt.plot(T_axis,tgen_axis,label = "Gen time")
+plt.plot(T_axis,tsolve_axis,label = "Solve time")
+plt.xscale('log')
+plt.xlabel("T (time complexity factor)")
+plt.ylabel("time")
+plt.title("Multiplicatively HTLP")
+plt.legend()
+plt.savefig('MHTLP.png')
 print(s_prime)
 
+T = 100
+T_axis = []
+tsetup_axis = []
+tgen_axis = []
+teval_axis = []
+tsolve_axis = []
+
+while T < 10000000:
+
+    T_axis.append(T)
+
+    tsetup_start = time.time()
+    pp = Partial_HP.PSetup(1024,T)
+    tsetup_end = time.time()
+    tsetup_axis.append(tsetup_end - tsetup_start)
+
+
+    tgen_start = time.time()
+    Z1 = Partial_HP.LPGen(pp,12)
+    Z2 = Partial_HP.LPGen(pp,512)
+    tgen_end = time.time()
+    tgen_axis.append(tgen_end - tgen_start)
+
+
+    teval_start = time.time()
+    Z_prime = Partial_HP.LPEval(pp,(Z1,Z2))
+    teval_end = time.time()
+    teval_axis.append(teval_end - teval_start)
+
+
+    tsolve_start = time.time()
+    s_prime = Partial_HP.LPSolve(pp,Z_prime)
+    tsolve_end = time.time()
+    tsolve_axis.append(tsolve_end - tsolve_start)
+
+
+    if s_prime != 512 + 12:
+        raise Exception("Error: Wrong result")
+
+    T = T * 2
+
+plt.figure()
+plt.plot(T_axis,tsetup_axis,label = "Setup time")
+plt.plot(T_axis,tgen_axis,label = "Gen time")
+plt.plot(T_axis,tsolve_axis,label = "Solve time")
+plt.xscale('log')
+plt.xlabel("T (time complexity factor)")
+plt.ylabel("time")
+plt.title("Linearly HTLP")
+plt.legend()
+plt.savefig('LHTLP.png')
+print(s_prime)
 
 
         
