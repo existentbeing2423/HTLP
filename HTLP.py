@@ -1,6 +1,7 @@
-from Crypto.Util.number import getPrime, getRandomRange, GCD , inverse
+from Crypto.Util.number import getPrime, getRandomRange, GCD , inverse, isPrime, getStrongPrime
 import gmpy2
-
+import time 
+from matplotlib import pyplot
 
 def sample_Z_star(N):
     while True:
@@ -19,12 +20,12 @@ class LHP:
         self.pp = (T,N,g,h)
 
     def PSetup (l,T):
-        p = 2*getPrime(l) + 1
-        q = 2*getPrime(l) + 1
+        p = getStrongPrime(l)
+        q = getStrongPrime(l)
         N = p*q
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
-        temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
+        temp_exp = pow(2,T,(p - 1)*(q - 1)) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
         h = pow(g,temp_exp,N) 
         print("done setup \n")
         return LHP(T,N,g,h)
@@ -73,12 +74,12 @@ class MHP:
         self.pp = (T,N,g,h)
 
     def PSetup (l,T):
-        p = 2*getPrime(l) + 1
-        q = 2*getPrime(l) + 1
+        p = getStrongPrime(l)
+        q = getStrongPrime(l)
         N = p*q
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
-        temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
+        temp_exp = pow(2,T,(p - 1)*(q - 1)) # calcula 2^T modulo phi(N),  para facilitar a proxima operacao
         h = pow(g,temp_exp,N) 
         print("done setup \n")
         return LHP(T,N,g,h)
@@ -118,12 +119,33 @@ class MHP:
         return (u_prime,v_prime)
 
 
-pp = MHP.PSetup(1024,2041)
+tsetup_start = time.time()
+pp = MHP.PSetup(1024,2000041)
+tsetup_end = time.time()
+print(tsetup_end - tsetup_start)
+
+
+tgen_star = time.time()
 Z1 = MHP.PGen(pp,12)
 Z2 = MHP.PGen(pp,512)
+tgen_end = time.time()
+print(tgen_end - tgen_star)
+
+
+teval_start = time.time()
 Z_prime = MHP.PEval(pp,(Z1,Z2))
+teval_end = time.time()
+print(teval_end - teval_start)
+
+
+tsolve_start = time.time()
 s_prime = MHP.PSolve(pp,Z_prime)
+tsolve_end = time.time()
+print(tsolve_end - tsolve_start)
+
+
 print(s_prime)
+
 
 
         
