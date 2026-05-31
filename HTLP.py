@@ -1,7 +1,8 @@
-from Crypto.Util.number import getPrime, getRandomRange, GCD , inverse, isPrime, getStrongPrime
-import gmpy2
+from Crypto.Util.number import getRandomRange, GCD , inverse
 import time 
 from matplotlib import pyplot as plt
+import subprocess as sp
+
 
 def sample_Z_star(N):
     while True:
@@ -20,12 +21,23 @@ class Partial_HP:
         self.pp = (T,N,g,h)
 
     def PSetup (l,T):
-        p = getStrongPrime(l)
-        q = getStrongPrime(l)
+        while True:
+            p = int(
+                sp.check_output(
+                    ["openssl", "prime", "-generate", "-safe", "-bits", "1024"]
+                )
+            )
+            q = int(
+                sp.check_output(
+                    ["openssl", "prime", "-generate", "-safe", "-bits", "1024"]
+                )
+            )
+            if p != q:
+                break
         N = p*q
         g_tilde = sample_Z_star(N)
         g = (-pow(g_tilde,2,N)) % N
-        temp_exp = pow(2,T,(p - 1)*(q - 1)) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
+        temp_exp = pow(2,T,(p - 1)*(q - 1)//2) # calcula 2^T modulo phi(N)/2,  para facilitar a proxima operacao
         h = pow(g,temp_exp,N) 
         return Partial_HP(T,N,g,h)
     
@@ -141,7 +153,7 @@ plt.ylabel("time")
 plt.title("Multiplicatively HTLP")
 plt.legend()
 plt.savefig('MHTLP.png')
-print(s_prime)
+print("s' = s1 * s2 = ",s_prime)
 
 T = 100
 T_axis = []
@@ -194,7 +206,7 @@ plt.ylabel("time")
 plt.title("Linearly HTLP")
 plt.legend()
 plt.savefig('LHTLP.png')
-print(s_prime)
+print("s' = s1 * s2 = ",s_prime)
 
 
         
